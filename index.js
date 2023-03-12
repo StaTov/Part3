@@ -1,8 +1,13 @@
 const express = require('express')
-const {request} = require("express");
 const app = express()
+const morgan = require('morgan')
 
 app.use(express.json())
+morgan.token('body', function getBody(req, res) {
+    return JSON.stringify(req.body)
+})
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
+
 
 let persons = [
     {
@@ -27,8 +32,8 @@ let persons = [
     }
 ]
 
-app.get('/api/persons', (request, response) => {
-    response.json(persons)
+app.get('/api/persons', (req, res) => {
+    res.json(persons)
 })
 
 app.get(`/info`, (request, response) => {
@@ -48,11 +53,14 @@ app.get('/api/persons/:id', (request, response) => {
 })
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
+    if (!persons.find(p => p.id === id)) {
+        response.status(404).json({error: 'You can\'t delete a user that doesn\'t exist'})
+    }
     persons = persons.filter(p => p.id !== id)
     response.status(204).end()
 })
 
-createId = () => {
+generateId = () => {
     const id = Math.trunc(Math.random() * 1e7)
     return id
 }
@@ -66,12 +74,13 @@ app.post('/api/persons', (request, response) => {
             return response.status(400).json({error: 'name must be unique'})
         }
         const newPerson = {
+            id: generateId(),
             name: body.name,
-            number: body.number,
-            id: createId()
+            number: body.number
+
         }
-        response.json(newPerson)
         persons = persons.concat(newPerson)
+        response.json(newPerson)
     }
 )
 
