@@ -33,8 +33,7 @@ let persons = [
 ]
 
 app.get('/api/persons', (req, res) => {
-    console.log(req, res)
-    res.json(persons)
+       res.json(persons)
 })
 
 app.get(`/info`, (request, response) => {
