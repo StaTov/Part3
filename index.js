@@ -1,11 +1,11 @@
 const express = require('express')
-const app = express()
 const morgan = require('morgan')
+const cors = require('cors')
+const app = express()
 
+app.use(cors())
 app.use(express.json())
-morgan.token('body', function getBody(req, res) {
-    return JSON.stringify(req.body)
-})
+morgan.token('body', function getBody (req,res) {return JSON.stringify(req.body)})
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 
@@ -33,6 +33,7 @@ let persons = [
 ]
 
 app.get('/api/persons', (req, res) => {
+    console.log(req, res)
     res.json(persons)
 })
 
@@ -53,7 +54,7 @@ app.get('/api/persons/:id', (request, response) => {
 })
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
-    if (!persons.find(p => p.id === id)) {
+    if(!persons.find(p => p.id === id)){
         response.status(404).json({error: 'You can\'t delete a user that doesn\'t exist'})
     }
     persons = persons.filter(p => p.id !== id)
@@ -79,13 +80,13 @@ app.post('/api/persons', (request, response) => {
             number: body.number
 
         }
-        persons = persons.concat(newPerson)
         response.json(newPerson)
+        persons = persons.concat(newPerson)
     }
 )
 
 
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
     console.log(`Server running on port${PORT}`)
 })
