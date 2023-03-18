@@ -13,7 +13,6 @@ morgan.token('body', function getBody(req, res) {
 })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-
 app.get('/api/persons', (request, response) => {
     Person.find({}).then(persons => {
         response.json(persons)
@@ -24,7 +23,6 @@ app.get(`/info`, (request, response, next) => {
 
     Person.find({})
         .then(result => {
-            console.log(result)
             response.send(`Phonebook has info for ${result.length} people </br>
           ${new Date()}`)
         })
@@ -46,37 +44,25 @@ app.delete('/api/persons/:id', (request, response, next) => {
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
-    const body = request.body
+    const {name, number} = request.body
 
-    const note = {
-        name: body.name,
-        number: body.number,
-    }
-    Person.findByIdAndUpdate(request.params.id, note, {new: true})
+    Person.findByIdAndUpdate(request.params.id,
+        {name, number},
+        {new: true, runValidators: true, context: 'query'})
         .then(updatedNote => {
             response.json(updatedNote)
         })
         .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
-    const body = request.body
-
-    if (!body.name || !body.number) {
-        return response.status(400).json({error: 'content missing'})
-    }
-
-    /* if (persons.find(p => p.name.toLowerCase().trim() === body.name.toLowerCase().trim())) {
-         return response.status(400).json({error: 'name must be unique'})
-     }
-     */
-    const newPerson = new Person({
-        name: body.name,
-        number: body.number
-    })
-    newPerson.save().then(savedPerson => {
-        response.json(savedPerson)
-    })
+app.post('/api/persons', (request, response, next) => {
+    const {name, number} = request.body
+    const newPerson = new Person({name, number})
+    newPerson.save()
+        .then(savedPerson => {
+            response.json(savedPerson)
+        })
+        .catch(error => next(error))
 })
 const errorHandler = (error, request, response, next) => {
     console.error(error.message)
@@ -84,7 +70,10 @@ const errorHandler = (error, request, response, next) => {
     if (error.name === 'CastError') {
         return response.status(400).send({error: 'malformatted id'})
         next(error)
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({error: error.message})
     }
+    next(error)
 }
 app.use(errorHandler)
 
